@@ -14,8 +14,11 @@ class UserController {
   // register
   async register(req, res) {
     try {
-      const { password, confirm_password, email } = req.body;
-      if (!password || !confirm_password || !email) {
+      const { password, confirm_password, email, uid, photoURL, displayName } =
+        req.body;
+      let check = !password || !confirm_password;
+      let check2 = !uid || !photoURL || !displayName || !email;
+      if (check === false && check2 === false) {
         return res.status(200).json({
           status: false,
           message: "Invalid data!",
@@ -28,26 +31,38 @@ class UserController {
           message: "Password and confirm password do not match!",
         });
       }
-
-      const passwordHash = await Util.hashPassword(password);
+      let passwordHash = "";
+      if (password) {
+        const passwordHash = await Util.hashPassword(password);
+      }
 
       const isEmailTaken = await User.checkEmailAlready(email);
-      if (isEmailTaken) {
+      if (isEmailTaken && !uid) {
         return res.status(200).json({
           status: false,
           message: "Email is already taken. Please try again.",
         });
+      } else if (uid && photoURL && displayName) {
+        await User.editUser({
+          uid,
+          photoURL,
+          displayName,
+          email,
+        });
+        res.status(200).json({
+          status: true,
+          message: "Registration successful!",
+        });
+      } else {
+        await User.createNewUser({
+          email: email,
+          password: passwordHash,
+        });
+        res.status(200).json({
+          status: true,
+          message: "Registration successful!",
+        });
       }
-
-      await User.createNewUser({
-        email: email,
-        password: passwordHash,
-      });
-
-      return res.status(200).json({
-        status: true,
-        message: "Registration successful!",
-      });
     } catch (error) {
       console.error("Error in registration:", error);
       return res.status(500).json({
@@ -67,14 +82,13 @@ class UserController {
       });
     }
     const code = Util.generateVerificationCode();
-    console.log(email);
     Util.sendEmail(
       email,
       "verify code",
       `<b>Code verify for you is : <span style='color: blue'}> ${code} </span></b>`
     )
       .then((info) => {
-        console.log(info);
+        // console.log(info);
         return res.json({
           status: true,
           message: "Vui lòng kiểm tra email!",
@@ -85,6 +99,57 @@ class UserController {
         console.error(error);
         return res.json({ status: false, message: "Không gửi được email" });
       });
+  }
+
+  async checkEmailAlreadyExists(req, res) {
+    const email = req.body.email;
+    if (!email) {
+      return res.json({ status: false, message: "Invalid data" });
+    }
+    const isEmailTaken = await User.checkEmailAlready(email);
+
+    if (isEmailTaken) {
+      return res.status(200).json({
+        status: true,
+        message: "Email này tồn tại!",
+      });
+    }
+
+    res.json({ status: false, message: "Email không tôn tại!" });
+  }
+
+  async login(req, res) {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.json({ status: false, message: "Invalid data" });
+    }
+
+    const isEmailTaken = await User.checkEmailAlready(email);
+
+    if (!isEmailTaken) {
+      return res.json({ status: false, message: "Email không tồn tại!" });
+    }
+
+    let user = await User.findUser({ email: email });
+    if (user) {
+      const checkPassword = await Util.verifyPassword(password, user.password);
+
+      if (checkPassword) {
+        return res.json({
+          status: true,
+          message: "Đăng nhập thành công!",
+          user: JSON.stringify(user),
+        });
+      } else {
+        return res.json({
+          status: false,
+          message: "Mật khẩu sai, vui lòng nhập lại!",
+        });
+      }
+    }
+
+    return res.json({ status: false, message: "Tài khoản không tồn tại!" });
   }
 }
 
