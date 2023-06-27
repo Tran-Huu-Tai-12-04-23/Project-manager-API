@@ -1,5 +1,6 @@
 const Util = require("../help/index");
 const nodemailer = require("nodemailer");
+const { getProject } = require("../model/Project.model");
 
 const {
   createNewUser,
@@ -247,6 +248,34 @@ class UserController {
       res.json({
         status: true,
         data: JSON.stringify(data),
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUserNotMember(req, res, next) {
+    try {
+      const { projectId } = req.query;
+      const project = await getProject(projectId);
+
+      if (project) {
+        let listUserInProject = [];
+        console.log(project);
+        listUserInProject.push(project.createdBy);
+        listUserInProject = [...listUserInProject, ...project.member];
+        const condition = { _id: { $nin: listUserInProject } };
+        const data = await findUsers(condition);
+        if (data) {
+          res.json({
+            status: true,
+            data: JSON.stringify(data),
+          });
+        }
+      }
+      res.json({
+        status: false,
+        message: "error",
       });
     } catch (error) {
       next(error);

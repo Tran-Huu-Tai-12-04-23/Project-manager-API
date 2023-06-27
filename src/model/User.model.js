@@ -64,7 +64,7 @@ const findUser = async (condition) => {
     throw error;
   }
 };
-const findUsers = async ({ condition }) => {
+const findUsers = async (condition) => {
   try {
     const res = await User.find({ ...condition });
     return res;

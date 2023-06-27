@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { Column } = require("./Column.model");
+const { Column, removeColumnFrProject } = require("./Column.model");
 
 const projectSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -14,6 +14,7 @@ const projectSchema = new mongoose.Schema({
   date_end: { type: Date, default: Date.now },
   member: [{ type: mongoose.Schema.Types.ObjectId, ref: "user" }],
   createdAt: { type: Date, default: Date.now },
+  is_delete: { type: Boolean, default: false },
 });
 
 const projectHistorySchema = new mongoose.Schema({
@@ -56,6 +57,15 @@ const createNewInfoProject = async (data) => {
   }
 };
 
+const getProject = async (projectId) => {
+  try {
+    const projects = await Project.findOne({ _id: projectId });
+    return projects;
+  } catch (error) {
+    console.error("Error retrieving projects information:", error);
+    throw error;
+  }
+};
 const createHistory = async (data) => {
   try {
     const newHistory = new History(data);
@@ -78,9 +88,9 @@ const insertNewFile = async (data) => {
   }
 };
 
-const getProjectsInfo = async ({ condition }) => {
+const getProjectsInfo = async (condition) => {
   try {
-    const projects = await Project.find({ condition })
+    const projects = await Project.find({ ...condition })
       .populate({
         path: "columns",
         populate: {
@@ -131,6 +141,49 @@ const cutColumnFromProject = async (colId, projectId) => {
   }
 };
 
+const addMember = async (userId, projectId) => {
+  try {
+    const newProject = await Project.findOne({ _id: projectId });
+    if (newProject) {
+      const members = newProject.member;
+      members.push(userId);
+      console.log(members);
+      await Project.updateOne({ _id: projectId }, { member: members });
+      return newProject;
+    }
+  } catch (error) {
+    console.error("Error querying project:", error);
+    throw error;
+  }
+};
+const removeSoftProject = async (projectId) => {
+  try {
+    const newProject = await Project.findOne({ _id: projectId });
+    if (newProject) {
+      await Project.updateOne({ _id: projectId }, { is_delete: true });
+      return newProject;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error querying project:", error);
+    throw error;
+  }
+};
+const forceProject = async (projectId) => {
+  try {
+    const newProject = await Project.findOne({ _id: projectId });
+    if (newProject) {
+      let columns = newProject.columns;
+      const result = await removeColumnFrProject(colId);
+      return result;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error querying project:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   Project,
   getProjectsInfo,
@@ -139,4 +192,7 @@ module.exports = {
   insertNewFile,
   addColIntoProject,
   cutColumnFromProject,
+  getProject,
+  addMember,
+  removeSoftProject,
 };

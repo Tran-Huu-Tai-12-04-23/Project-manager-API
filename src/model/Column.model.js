@@ -29,19 +29,16 @@ const createNewColForProject = async (data) => {
 
 const removeColumnFrProject = async (colId) => {
   try {
-    const removedColumnPromise = await Column.findByIdAndRemove(colId);
-    const removeTaskPromise = await Column.findOneAndRemove({
-      column: colId,
-    });
+    const removedColumn = await Column.findByIdAndRemove(colId);
+    const tasks = removedColumn.tasks;
 
-    const [removedColumn, removedTask] = await Promise.all([
-      removedColumnPromise,
-      removeTaskPromise,
-    ]);
+    const removeTaskPromise = Task.deleteMany({ _id: { $in: tasks } });
+
+    const removedTask = await removeTaskPromise;
 
     return { removedColumn, removedTask };
   } catch (error) {
-    console.error("Error creating column:", error);
+    console.error("Error removing column and tasks:", error);
     throw error;
   }
 };

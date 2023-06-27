@@ -12,6 +12,9 @@ const {
   getProjectsInfo,
   addColIntoProject,
   cutColumnFromProject,
+  addMember,
+  removeSoftProject,
+  forceProject,
 } = require("../model/Project.model");
 
 const {
@@ -77,7 +80,13 @@ class ProjectController {
       if (!user_id) {
         return res.json({ status: false, message: "Invalid data" });
       }
-      const result = await getProjectsInfo({ createdBy: user_id });
+      const condition = {
+        $and: [
+          { createdBy: new mongoose.Types.ObjectId(user_id), is_delete: false },
+        ],
+      };
+      const result = await getProjectsInfo(condition);
+
       res.json({ status: true, data: JSON.stringify(result) });
     } catch (error) {
       console.error(error);
@@ -237,6 +246,94 @@ class ProjectController {
           message: "Thay đổi công việc không thành công!",
         });
       }
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async addMemberToProject(req, res, next) {
+    try {
+      const { userId, projectId } = req.body;
+
+      if (!userId || !projectId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+
+      const result = await addMember(userId, projectId);
+
+      if (result) {
+        res.json({
+          status: true,
+          message: "Thêm thành viên thành công!",
+          data: JSON.stringify(result),
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "Thêm thành viên thất bại!",
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async removeSoftProject(req, res, next) {
+    try {
+      const { projectId } = req.query;
+
+      if (!projectId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+
+      const result = await removeSoftProject(projectId);
+
+      if (result) {
+        res.json({
+          status: true,
+          message: "Xóa dự án thành công!",
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "Xóa dự án thất bại!",
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async forceProject(req, res, next) {
+    try {
+      const { projectId } = req.query;
+
+      if (!projectId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+
+      const result = await forceProject(projectId);
+
+      if (result) {
+        res.json({
+          status: true,
+          message: "Xóa dự án thành công!",
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "Xóa dự án thất bại!",
+        });
+      }
+
+      return;
     } catch (error) {
       console.error(error);
       next(error);

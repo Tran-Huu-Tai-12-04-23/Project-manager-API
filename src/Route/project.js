@@ -20,6 +20,8 @@ router.get("/get-projects", ProjectController.getProjects);
 router.get("/get-tasks", ProjectController.getTasks);
 router.delete("/remove-col", ProjectController.removeColumn);
 router.post("/change-col-for-task", ProjectController.changeColForTask);
+router.put("/add-member-to-project", ProjectController.addMemberToProject);
+router.delete("/remove-soft-project", ProjectController.removeSoftProject);
 
 router.post(
   "/create-new-info-project",
