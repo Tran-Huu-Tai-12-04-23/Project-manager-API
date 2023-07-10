@@ -4,7 +4,12 @@ const cors = require("cors");
 const app = express();
 const bodyParser = require("body-parser");
 const connectDb = require("./configDb");
+const path = require('path');
 
+const staticFolderPath = path.join(__dirname); 
+app.use(express.static(staticFolderPath));
+
+app.use(express.static('public'));
 app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());

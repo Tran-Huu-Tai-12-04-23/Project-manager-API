@@ -1,10 +1,18 @@
 const mongoose = require("mongoose");
+const Helper = require("../helper");
 
 const Util = require("../help/index");
 const {
   getTaskWithHighestOrder,
   createNewTask,
 } = require("../model/Task.model");
+
+const {
+  createNewNote,
+  deleteOneNote,
+  findNotesByUserAndProject
+} = require("../model/Note.model");
+
 const {
   createNewInfoProject,
   createHistory,
@@ -15,6 +23,9 @@ const {
   addMember,
   removeSoftProject,
   forceProject,
+  updateProject,
+  getNumberProjectDelete,
+  restoreProject
 } = require("../model/Project.model");
 
 const {
@@ -82,7 +93,27 @@ class ProjectController {
       }
       const condition = {
         $and: [
-          { createdBy: new mongoose.Types.ObjectId(user_id), is_delete: false },
+          { createdBy: user_id, is_delete: false },
+        ],
+      };
+      const result = await getProjectsInfo(condition);
+
+      res.json({ status: true, data: JSON.stringify(result) });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async getProjectsDelete(req, res, next) {
+    try {
+      const { userId } = req.query;
+      if (!userId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+      const condition = {
+        $and: [
+          { createdBy: userId, is_delete: true },
         ],
       };
       const result = await getProjectsInfo(condition);
@@ -104,7 +135,7 @@ class ProjectController {
       }
 
       const projectIdOj = new mongoose.Types.ObjectId(projectId);
-      const userIdOj = new mongoose.Types.ObjectId(projectId);
+      const userIdOj = new mongoose.Types.ObjectId(userId);
       let result = await createNewColForProject({
         name: nameCol,
         project: projectIdOj,
@@ -334,6 +365,203 @@ class ProjectController {
       }
 
       return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async eidtProject(req, res, next) {
+    try {
+      const { projectId, name , description, dateEnd, createBy } = req.body;
+
+      if (!projectId || !name || !description ) {
+        return res.json({ status: false, message: "Invalid data!!" });
+      }
+      const files = req.files;
+
+      const fileLinks = req.files.map((file) => `/uploads/${file.filename}`);
+      console.log(createBy)
+      const newListFIleId = await Promise.all(
+        files.map(async (file, index) => {
+          const resultInsertFile = await insertNewFile({
+            createdBy: createBy,
+            filepath: fileLinks[index],
+            filename: file.filename,
+          });
+          return resultInsertFile._id;
+        })
+      );
+
+      const result =await updateProject(projectId,newListFIleId, {
+        name: name, description:description, date_end: dateEnd
+      } )
+
+
+      if (result) {
+        res.json({
+          status: true,
+          message: "Chinh sua dự án thành công!",
+          data: JSON.stringify(result),
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "Chinh sua dự án that bai!",
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async getNumberProjectDelete(req, res, next) {
+    try {
+      const {userId} = req.query;
+      if (!userId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+      const result = await getNumberProjectDelete({createdBy : userId , is_delete: true });
+      console.log(result)
+
+      if (result|| result === 0) {
+        res.json({
+          status: true,
+          message: "get number project deleted",
+          data: result
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "get number project deleted falied!!",
+
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async restoreProject(req, res, next) {
+    try {
+      const { projectId } = req.body;
+
+      if (!projectId) {
+        return res.json({ status: false, message: "Invalid data" });
+      }
+
+      const result = await restoreProject(projectId);
+
+      if (result) {
+        res.json({
+          status: true,
+          message: "Xóa dự án thành công!",
+        });
+      } else {
+        res.json({
+          status: false,
+          message: "Xóa dự án thất bại!",
+        });
+      }
+
+      return;
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+  
+  async createNewNote(req, res, next) {
+    try {
+      const {projectId, createdBy, content} = req.body;
+      if( !projectId || !createdBy || !content ) {
+        return res.json({
+          status: false,
+          message: "Invalid data!!",
+        })
+      }
+
+      const result = await createNewNote({
+        project: new mongoose.Types.ObjectId(projectId), createdBy: new mongoose.Types.ObjectId(createdBy), content
+      });
+
+      if( result ) {
+        res.json({
+          status: true,
+          message: "Thêm thành viên thành công!",
+          data: JSON.stringify(result),
+        })
+      }else {
+        res.json({
+          status: false,
+          message: "Thêm thành viên thất bại!",
+        })
+      }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+          message: 'Server is error creating',
+      })
+    }  
+  }
+
+  async getAllNotesByProject(req, res, next) {
+    try {
+      const { projectId} = req.query;
+      if( !projectId ){
+        return res.json({
+          status: false,
+          message: "Invalid data!!",
+        })
+      }
+      const result = await findNotesByUserAndProject( projectId);
+      if( result ) {
+        res.json({
+          status: true,
+          message: "Get notes by user and project",
+          data: JSON.stringify(result),
+        })
+      }
+      else {
+        res.json({
+          status: false,
+          message: "Get notes by user and project falied!!",
+        })
+      }
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  }
+
+  async removeNote(req, res, next) {
+    try {
+      const { noteId } = req.query;
+      if( !noteId ){
+        return res.json({
+          status: false,
+          message: "Invalid data!!",
+        })
+      }
+      const result = await deleteOneNote( noteId);
+      if( result ) {
+        res.json({
+          status: true,
+          message: "Delete note successfully!",
+        })
+      }
+      else {
+        res.json({
+          status: false,
+          message: "Delete note failed!",
+        })
+      }
     } catch (error) {
       console.error(error);
       next(error);

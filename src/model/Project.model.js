@@ -102,7 +102,12 @@ const getProjectsInfo = async (condition) => {
         path: "createdBy",
         model: "user",
       })
-      .populate("member");
+      .populate({
+        path: "files",
+        model: "File",
+      })
+      .populate("member")
+
     return projects;
   } catch (error) {
     console.error("Error retrieving projects information:", error);
@@ -184,6 +189,59 @@ const forceProject = async (projectId) => {
   }
 };
 
+const updateProject = async (projectId, newListFileId, newData) => {
+  try {
+    console.log(projectId)
+    const project = await Project.findById(projectId);
+
+    if (project) {
+      let files = project.files;
+      files = [...files, ...newListFileId];
+      const projectUpdate = {
+        ...project.toObject(),
+        files: files,
+        ...newData
+      };
+
+      const result = await Project.findOneAndUpdate(
+        { _id: projectId },
+        projectUpdate,
+        { new: true }
+      );
+      return result;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error querying project:", error);
+    throw error;
+  }
+};
+
+const getNumberProjectDelete = async (condition) => {
+  try {
+    const projects = await Project.countDocuments({...condition });
+    return projects;
+  } catch (error) {
+    console.error("Error querying project:", error);
+    throw error;
+  }
+}
+
+const restoreProject = async (projectId) => {
+  try {
+    const newProject = await Project.findOne({ _id: projectId });
+    if (newProject) {
+      await Project.updateOne({ _id: projectId }, { is_delete: false });
+      return newProject;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error querying project:", error);
+  }
+}
+
+
+
 module.exports = {
   Project,
   getProjectsInfo,
@@ -195,4 +253,6 @@ module.exports = {
   getProject,
   addMember,
   removeSoftProject,
+  updateProject,getNumberProjectDelete,
+  restoreProject
 };
