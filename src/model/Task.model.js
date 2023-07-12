@@ -48,4 +48,35 @@ const createNewTask = async (task) => {
   }
 };
 
-module.exports = { Task, getTaskWithHighestOrder, createNewTask };
+const updateTask = async (taskId, dataParams) => {
+  try {
+    const updatedTask = await Task.findOneAndUpdate({ _id: taskId }, dataParams, {
+      new: true
+    });
+
+    if (updatedTask) {
+      return updatedTask;
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error updating task:", error);
+    throw error;
+  }
+};
+
+const removeTask = async (taskId) => {
+  try {
+    const removeTask = await Task.findByIdAndRemove(taskId);
+    if (removeTask) {
+      return removeTask;
+    }
+    return false;
+  } catch (error) {
+    console.error("Error updating task:", error);
+    throw error;
+  }
+}
+
+
+module.exports = { Task, getTaskWithHighestOrder, createNewTask, updateTask, removeTask};

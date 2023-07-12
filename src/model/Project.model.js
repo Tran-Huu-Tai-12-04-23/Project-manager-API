@@ -121,7 +121,6 @@ const addColIntoProject = async (colId, projectId) => {
     if (newProject) {
       const col = newProject.columns;
       col.push(colId);
-      console.log(col);
       await Project.updateOne({ _id: projectId }, { columns: col });
       return newProject;
     }
@@ -152,7 +151,6 @@ const addMember = async (userId, projectId) => {
     if (newProject) {
       const members = newProject.member;
       members.push(userId);
-      console.log(members);
       await Project.updateOne({ _id: projectId }, { member: members });
       return newProject;
     }
@@ -191,7 +189,6 @@ const forceProject = async (projectId) => {
 
 const updateProject = async (projectId, newListFileId, newData) => {
   try {
-    console.log(projectId)
     const project = await Project.findById(projectId);
 
     if (project) {

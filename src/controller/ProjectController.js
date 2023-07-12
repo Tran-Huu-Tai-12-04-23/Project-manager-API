@@ -425,7 +425,6 @@ class ProjectController {
         return res.json({ status: false, message: "Invalid data" });
       }
       const result = await getNumberProjectDelete({createdBy : userId , is_delete: true });
-      console.log(result)
 
       if (result|| result === 0) {
         res.json({
@@ -567,6 +566,7 @@ class ProjectController {
       next(error);
     }
   }
+
 }
 
 module.exports = new ProjectController();

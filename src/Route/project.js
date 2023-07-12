@@ -13,13 +13,9 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-router.post("/create-new-task", ProjectController.createNewTask);
 router.post("/create-new-col", ProjectController.addColumn);
-
 router.get("/get-projects", ProjectController.getProjects);
-router.get("/get-tasks", ProjectController.getTasks);
 router.delete("/remove-col", ProjectController.removeColumn);
-router.post("/change-col-for-task", ProjectController.changeColForTask);
 router.put("/add-member-to-project", ProjectController.addMemberToProject);
 router.delete("/remove-soft-project", ProjectController.removeSoftProject);
 router.put("/edit-project",   upload.array("file"),ProjectController.eidtProject);
@@ -29,7 +25,6 @@ router.put("/restore-project",ProjectController.restoreProject);
 router.post("/create-new-note",ProjectController.createNewNote);
 router.get("/get-all-notes",ProjectController.getAllNotesByProject);
 router.delete("/remove-note",ProjectController.removeNote);
-
 router.post(
   "/create-new-info-project",
   upload.array("file"),
