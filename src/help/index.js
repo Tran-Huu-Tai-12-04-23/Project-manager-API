@@ -1,7 +1,9 @@
 const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
+const jwt = require('jsonwebtoken');
+const secretKey = 'your-secret-key';
 
-class Util {
+class Util  {
   async hashPassword(password) {
     const saltRounds = 10; // Number of salt rounds to generate
     try {
@@ -42,7 +44,7 @@ class Util {
       secure: false,
       auth: {
         user: "huutaidev@gmail.com", // generated ethereal user
-        pass: "vynpmzlehxevdqxg", // generated ethereal passwordƯ
+        pass: "vynpmzlehxevdqxg", // generated ethereal password
       }, // Sender's email password
     });
     const mailOptions = {
@@ -55,6 +57,49 @@ class Util {
 
     return transporter.sendMail(mailOptions);
   }
+
+  generateInvitationToken(userId) {
+    const expiration = Math.floor(Date.now() / 1000) + (265 * 60 * 24); // 24 hours
+    // Define the payload for the token
+    const payload = {
+      userId,
+      exp: expiration
+    };
+    // Generate the JWT
+    const token = jwt.sign(payload, secretKey);
+    return token;
+  }
+
+  generateHtmlContentInvite(link) {
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            /* Định dạng CSS cho các phần tử trong email */
+            h1 {
+              color: #ff0000; /* Màu đỏ */
+            }
+            
+            p {
+              font-weight: bold; /* In đậm */
+            }
+            
+            .highlight {
+              background-color: yellow; /* Nền màu vàng */
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Mời bạn trở thành thành viên</h1>
+          <p>Bạn đã nhận được một lời mời để trở thành thành viên trong ứng dụng của chúng tôi.</p>
+          <p class="highlight">Vui lòng nhấp vào <a href="${link}>đây</a> để đăng ký.</p>
+        </body>
+      </html>
+    `;
+
+    return htmlContent;
+  }
+
 }
 
 module.exports = new Util();

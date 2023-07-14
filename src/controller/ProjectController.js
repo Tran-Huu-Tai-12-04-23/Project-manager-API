@@ -91,11 +91,15 @@ class ProjectController {
       if (!user_id) {
         return res.json({ status: false, message: "Invalid data" });
       }
+      
       const condition = {
-        $and: [
-          { createdBy: user_id, is_delete: false },
+        $or: [
+          { $and: [{ createdBy: user_id }, { is_delete: false }] },
+          { member    : { $elemMatch: { $eq: user_id } } },
         ],
       };
+      console.log(condition);
+      
       const result = await getProjectsInfo(condition);
 
       res.json({ status: true, data: JSON.stringify(result) });
@@ -355,7 +359,7 @@ class ProjectController {
   async getNumberProjectDelete(req, res, next) {
     try {
       const {userId} = req.query;
-      if (!userId) {
+      if (!userId || userId === 'undefined') {
         return res.json({ status: false, message: "Invalid data" });
       }
       const result = await getNumberProjectDelete({createdBy : userId , is_delete: true });
