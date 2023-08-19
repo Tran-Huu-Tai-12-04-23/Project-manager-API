@@ -9,6 +9,7 @@ const {
     findUser,
     findUsers,
     updateUserById,
+    verifyPassword,
 } = require('../model/User.model');
 
 const { createNewOtp, verifyOtp } = require('../model/Otp.model');
@@ -26,7 +27,7 @@ class UserController {
     // register
     async register(req, res, next) {
         try {
-            const { password, confirm_password, email, uid, photoURL, displayName } = req.body;
+            const { password, confirm_password, email, uid, photoURL, displayName, isLoginOtherPlatform } = req.body;
             let check = !password || !confirm_password;
             let check2 = !uid || !photoURL || !displayName || !email;
             if (check === false && check2 === false) {
@@ -54,19 +55,27 @@ class UserController {
                 });
             } else if (uid && photoURL && displayName) {
                 if (isEmailTaken) {
-                    result = await updateUser({ id: uid, photoURL, displayName, email });
+                    result = await updateUser({
+                        id: uid,
+                        photoURL,
+                        displayName,
+                        email,
+                        isLoginOtherPlatform: isLoginOtherPlatform,
+                    });
                 } else {
                     result = await createNewUser({
                         id: uid,
                         photoURL,
                         displayName,
                         email,
+                        isLoginOtherPlatform: isLoginOtherPlatform,
                     });
                 }
             } else {
                 result = await createNewUser({
                     email: email,
                     password: passwordHash,
+                    isLoginOtherPlatform: isLoginOtherPlatform,
                 });
             }
             if (result) {
@@ -221,10 +230,12 @@ class UserController {
                 });
             }
             let hashPassword = await Util.hashPassword(password);
-            await updateUser({
-                email: email,
-                password: hashPassword,
-            });
+            await updateUser(
+                { email: email },
+                {
+                    password: hashPassword,
+                },
+            );
             res.json({
                 status: true,
                 message: 'Thay đổi mật khẩu thành công!',
@@ -340,7 +351,7 @@ class UserController {
                 full_name: fullName,
                 role_work: roleWork,
                 description,
-                useInfo: userId,
+                userInfo: userId,
                 address,
                 phone_number,
             });
@@ -450,6 +461,56 @@ class UserController {
                 res.json({
                     status: false,
                     message: 'Upload background failed!',
+                });
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async changePasswordByPassword(req, res, next) {
+        try {
+            const { oldPassword, newPassword, newConfirmPassword, userId } = req.body;
+            if (!newPassword || !newConfirmPassword || !userId) {
+                return res.json({ status: false, message: 'Invalid data' });
+            }
+
+            let verifyOldPassword = true;
+            if (oldPassword) {
+                verifyOldPassword = await verifyPassword(oldPassword, userId);
+            }
+
+            if (!verifyOldPassword) {
+                return res.json({
+                    status: false,
+                    message: 'Mật khẩu cũ không khớp !',
+                });
+            }
+
+            if (newPassword !== newConfirmPassword) {
+                return res.json({
+                    status: false,
+                    message: 'Xác nhận mật khẩu không khớp !',
+                });
+            }
+            let hashPassword = await Util.hashPassword(newPassword);
+            const result = await updateUser(
+                {
+                    _id: userId,
+                },
+                {
+                    password: hashPassword,
+                },
+            );
+            if (result) {
+                res.json({
+                    status: true,
+                    message: 'Thay đổi mật khẩu thành công!',
+                });
+            } else {
+                res.json({
+                    status: false,
+                    message: 'Thay đổi mật khẩu Khoong thành công!',
                 });
             }
         } catch (error) {

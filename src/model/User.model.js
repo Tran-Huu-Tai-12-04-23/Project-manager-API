@@ -1,3 +1,4 @@
+const Util = require('../help/index');
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
@@ -7,6 +8,7 @@ const userSchema = new mongoose.Schema({
     email: { type: String },
     photoURL: { type: String },
     displayName: { type: String },
+    isLoginOtherPlatform: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
 });
 
@@ -23,16 +25,9 @@ const createNewUser = async (user) => {
     }
 };
 
-const updateUser = async (user) => {
+const updateUser = async (condition, newData) => {
     try {
-        const { email, password, ...updateData } = user;
-
-        // If a new password is provided, hash it before updating
-        if (password) {
-            updateData.password = password;
-        }
-
-        const updatedUser = await User.findOneAndUpdate({ email: email }, updateData, { new: true });
+        const updatedUser = await User.findOneAndUpdate(condition, newData, { new: true });
 
         return updatedUser;
     } catch (err) {
@@ -82,6 +77,20 @@ const findUsers = async (condition) => {
     }
 };
 
+const verifyPassword = async (password, userId) => {
+    {
+        try {
+            const res = await User.findOne({ _id: userId });
+            const hashPass = res.password;
+            const verify = await Util.verifyPassword(password, hashPass);
+            return verify;
+        } catch (error) {
+            console.error('Error checking email in User collection:', error);
+            throw error;
+        }
+    }
+};
+
 module.exports = {
     User,
     findUsers,
@@ -90,4 +99,5 @@ module.exports = {
     updateUser,
     checkEmailAlready,
     updateUserById,
+    verifyPassword,
 };
